@@ -295,18 +295,33 @@ The JSON must match this exact schema:
       "city": "<city name>",
       "country": "<country>",
       "score": <float, one decimal>,
+      "confidence": <integer 0–100>,
       "score_breakdown": {{
         "<criterion>": <int 0-10>,
         ...
       }},
       "why_good": "<2–3 sentences explaining why this city fits the user's needs>",
-      "why_not": "<1–2 sentences on who this city is NOT ideal for>"
+      "why_not": "<1–2 sentences on who this city is NOT ideal for>",
+      "next_step": "<concrete, actionable recommendation>"
     }},
     {{ "rank": 2, ... }},
     {{ "rank": 3, ... }}
   ],
   "summary": "<3–5 sentence friendly summary of the recommendations for this user>"
 }}
+
+"confidence" (0–100): Estimate how well this city matches the user's stated intent.
+  90–100: near-perfect match across all criteria.
+  70–89: strong match with minor trade-offs.
+  50–69: partial match, notable gaps.
+  Below 50: weak match, only if no better option.
+  Vague queries → lower confidence even for good matches.
+
+"next_step": A concrete action the user should take.
+  Must be specific (not "consider visiting").
+  Include a time frame if possible (e.g. "1 month stay").
+  Include a neighborhood or area hint if relevant.
+  Must be practical and immediately actionable.
 
 IMPORTANT: Output only the JSON object. Nothing before it, nothing after it.
 """
@@ -350,6 +365,17 @@ def parse_response(raw: str) -> dict:
         print("Error: Model response contains no results.", file=sys.stderr)
         sys.exit(1)
 
+    for result in data["results"]:
+        if "confidence" not in result:
+            print("Error: result missing 'confidence' field.", file=sys.stderr)
+            sys.exit(1)
+        if not isinstance(result["confidence"], int) or not (0 <= result["confidence"] <= 100):
+            print(f"Error: 'confidence' must be an integer 0–100, got: {result.get('confidence')}", file=sys.stderr)
+            sys.exit(1)
+        if not result.get("next_step", "").strip():
+            print("Error: result missing or empty 'next_step' field.", file=sys.stderr)
+            sys.exit(1)
+
     return data
 
 
@@ -389,7 +415,8 @@ def format_output(data: dict, json_only: bool) -> None:
 
         for result in data["results"]:
             score = round(result["score"], 1)
-            print(f"\n#{result['rank']}  {result['city']}, {result['country']}  [{score}/10]")
+            confidence = result.get("confidence", "?")
+            print(f"\n#{result['rank']}  {result['city']}, {result['country']}  [{score}/10 | confidence: {confidence}%]")
 
             breakdown = result.get("score_breakdown", {})
             if breakdown:
@@ -398,6 +425,7 @@ def format_output(data: dict, json_only: bool) -> None:
 
             print(f"\n    Why good: {result['why_good']}")
             print(f"    Watch out: {result['why_not']}")
+            print(f"    Next step: {result['next_step']}")
 
         print()
         print("-" * 60)
