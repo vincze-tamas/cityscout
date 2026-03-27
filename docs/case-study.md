@@ -47,6 +47,26 @@ Ez az operációs réteg: az AI nem segít gondolkodni, hanem átveszi a dönté
 
 ---
 
+## Miért nem Google vagy ChatGPT?
+
+Google és az AI chatbotok is adnak választ. De a válaszuk: lista.
+Információt kapsz. A döntést rád hagyják.
+
+**CityScout más:**
+
+| | Google / ChatGPT | CityScout |
+|---|---|---|
+| Output | lista | 1 konkrét döntés |
+| Bizonyosság | nincs | confidence score (0–100) |
+| Következő lépés | nincs | next step, most, konkrétan |
+
+Nem az a cél, hogy többet tudj.
+Hanem hogy gyorsabban dönts.
+
+Ez a különbség a keresés és a decision engine között.
+
+---
+
 ## Az eredmény
 
 Input: `"olcsó, tenger, jó wifi, nyugodt"`
